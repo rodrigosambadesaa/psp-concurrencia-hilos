@@ -1,0 +1,10 @@
+package dev.rodrigosambade.concurrent;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+public final class ConcurrencyDemo {
+ private ConcurrencyDemo(){}
+ public static List<Integer> producerConsumer(int count)throws InterruptedException{if(count<0)throw new IllegalArgumentException("count");BlockingQueue<Integer> queue=new ArrayBlockingQueue<>(Math.max(1,Math.min(32,count+1)));List<Integer> consumed=Collections.synchronizedList(new ArrayList<>());try(var executor=Executors.newFixedThreadPool(2)){Future<?> producer=executor.submit(()->{try{for(int i=0;i<count;i++)queue.put(i);queue.put(-1);}catch(InterruptedException e){Thread.currentThread().interrupt();}});Future<?> consumer=executor.submit(()->{try{for(int value;(value=queue.take())!=-1;)consumed.add(value);}catch(InterruptedException e){Thread.currentThread().interrupt();}});try{producer.get();consumer.get();}catch(ExecutionException e){throw new IllegalStateException(e.getCause());}}return List.copyOf(consumed);}
+ public static Map<String,Integer> processCheckout(List<Integer> itemTimesMs,int cashiers)throws InterruptedException{if(cashiers<=0)throw new IllegalArgumentException("cashiers");Queue<Integer> queue=new ConcurrentLinkedQueue<>(itemTimesMs);Map<String,AtomicInteger> counters=new ConcurrentHashMap<>();try(var executor=Executors.newFixedThreadPool(cashiers)){List<Future<?>> futures=new ArrayList<>();for(int c=1;c<=cashiers;c++){String name="cashier-"+c;counters.put(name,new AtomicInteger());futures.add(executor.submit(()->{Integer delay;while((delay=queue.poll())!=null){try{Thread.sleep(Math.max(0,delay));}catch(InterruptedException e){Thread.currentThread().interrupt();return;}counters.get(name).incrementAndGet();}}));}for(Future<?>f:futures)try{f.get();}catch(ExecutionException e){throw new IllegalStateException(e);}}Map<String,Integer> result=new TreeMap<>();counters.forEach((k,v)->result.put(k,v.get()));return result;}
+ public static void main(String[]args)throws Exception{System.out.println("Productor/consumidor: "+producerConsumer(10));System.out.println("Cajeras: "+processCheckout(List.of(10,20,5,15,10,5),2));}
+}
