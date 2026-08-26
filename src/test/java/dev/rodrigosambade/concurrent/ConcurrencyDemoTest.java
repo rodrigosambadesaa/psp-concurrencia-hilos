@@ -1,5 +1,32 @@
 package dev.rodrigosambade.concurrent;
-import org.junit.jupiter.api.Test;
+
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
-class ConcurrencyDemoTest {@Test void producerConsumerPreservesItems()throws Exception{assertEquals(List.of(0,1,2,3,4),ConcurrencyDemo.producerConsumer(5));}@Test void checkoutProcessesEverythingOnce()throws Exception{assertEquals(6,ConcurrencyDemo.processCheckout(List.of(0,0,0,0,0,0),3).values().stream().mapToInt(Integer::intValue).sum());}}
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class ConcurrencyDemoTest {
+
+    @Test
+    void producerConsumerPreservesItems() throws InterruptedException {
+        List<Integer> consumed = ConcurrencyDemo.producerConsumer(5);
+
+        assertEquals(List.of(0, 1, 2, 3, 4), consumed);
+    }
+
+    @Test
+    void checkoutProcessesEveryItemExactlyOnce() throws InterruptedException {
+        Map<String, Integer> processedByCashier = ConcurrencyDemo.processCheckout(
+                List.of(0, 0, 0, 0, 0, 0),
+                3);
+
+        int processedItems = processedByCashier.values()
+                .stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        assertEquals(6, processedItems);
+    }
+}
